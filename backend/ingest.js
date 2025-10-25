@@ -1,11 +1,9 @@
 import fetch from 'node-fetch';
 import pool from './db.js';
 
-// Replace with your API key and resource ID
 const API_KEY = process.env.DATA_GOV_API_KEY;
 const RESOURCE_ID = 'ee03643a-ee4c-48c2-ac30-9f2ff26ab722';
 
-// Fetch MGNREGA data from data.gov.in API
 async function fetchMGNREGAData(stateName) {
   const API_URL = `https://api.data.gov.in/resource/${RESOURCE_ID}?api-key=${API_KEY}&format=json&filters[state_name]=${encodeURIComponent(stateName)}&limit=10000`;
   const res = await fetch(API_URL);
@@ -13,15 +11,16 @@ async function fetchMGNREGAData(stateName) {
   return res.json();
 }
 
-
-// Upsert a single record into the database
+// UPSERT record
 async function upsertRecord(row) {
   const query = `
-    INSERT INTO mgnrega_monthly
-      (district_code, district_name, year, month, total_households_worked, total_individuals_worked,
-       avg_days_per_household, payments_generated_within_15_days, wages)
-    VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
-    ON CONFLICT (district_code, year, month) DO UPDATE SET
+    INSERT INTO mgnrega_monthly (
+      district_code, district_name, year, month,
+      total_households_worked, total_individuals_worked,
+      avg_days_per_household, payments_generated_within_15_days, wages
+    ) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9)
+    ON CONFLICT (district_code, year, month)
+    DO UPDATE SET
       total_households_worked = EXCLUDED.total_households_worked,
       total_individuals_worked = EXCLUDED.total_individuals_worked,
       avg_days_per_household = EXCLUDED.avg_days_per_household,
@@ -46,15 +45,17 @@ async function upsertRecord(row) {
 
 (async function main() {
   try {
-    const stateName = 'MAHARASHTRA'; // or your chosen state
-    const year = 2025;
-    const month = 10;
+    const stateName = 'MAHARASHTRA';
+    const year = new Date().getFullYear();
+    const month = new Date().getMonth() + 1;
 
+    console.log(`Fetching data for ${stateName} (${month}/${year})...`);
     const data = await fetchMGNREGAData(stateName);
     const records = data.records || [];
+
     console.log(`Fetched ${records.length} records from API for ${stateName}.`);
 
-    for (const r of records) {
+    for (const [i, r] of records.entries()) {
       await upsertRecord({
         district_code: r['district_code'] || r['District Code'],
         district_name: r['district_name'] || r['District Name'],
@@ -66,13 +67,14 @@ async function upsertRecord(row) {
         payments_generated_within_15_days: parseFloat(r['percentage_payments_gererated_within_15_days']) || 0,
         wages: parseFloat(r['Wages']) || 0,
       });
+
+      if (i % 100 === 0) console.log(`Inserted ${i} records...`);
     }
 
     console.log(`✅ Ingested ${records.length} records successfully.`);
   } catch (err) {
     console.error('❌ Ingestion failed:', err);
   } finally {
-    pool.end();
+    await pool.end();
   }
 })();
-

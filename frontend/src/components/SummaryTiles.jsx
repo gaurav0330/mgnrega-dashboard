@@ -9,19 +9,23 @@ export default function SummaryTiles({ data, lang }) {
     {
       label_en: 'Individuals worked',
       label_hi: 'काम करने वाले व्यक्ति',
-      value: data.total_individuals_worked?.toLocaleString() || '—',
+      value: data.people_got_work?.toLocaleString() ?? '—',
       color: 'bg-green-100 text-green-800 border-green-300',
     },
     {
       label_en: 'Avg. days per household',
       label_hi: 'प्रति परिवार औसत कार्य दिवस',
-      value: data.avg_days_per_household || '—',
+      value: data.avg_days_per_household ?? '—',
       color: 'bg-amber-100 text-amber-800 border-amber-300',
     },
     {
-      label_en: 'Payments within 15 days (%)',
-      label_hi: '15 दिनों में भुगतान (%)',
-      value: `${data.payments_generated_within_15_days || 0}%`,
+      label_en: 'Payments delayed (%)',
+      label_hi: 'भुगतान में देरी (%)',
+      // if you want "within 15 days", change to: 100 - data.payments_delayed_percent
+      value:
+        data.payments_delayed_percent != null
+          ? `${data.payments_delayed_percent.toFixed(2)}%`
+          : '—',
       color: 'bg-blue-100 text-blue-800 border-blue-300',
     },
   ];
@@ -51,9 +55,7 @@ export default function SummaryTiles({ data, lang }) {
           <button
             onClick={() =>
               speak(
-                `${lang === 'en' ? tile.label_en : tile.label_hi}: ${
-                  tile.value
-                }`
+                `${lang === 'en' ? tile.label_en : tile.label_hi}: ${tile.value}`
               )
             }
             className="absolute top-2 right-2 p-1 bg-white rounded-full shadow hover:bg-gray-50"
