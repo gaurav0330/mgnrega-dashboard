@@ -24,7 +24,12 @@ export async function getDistrictSummary(req, res) {
           month,
           total_individuals_worked AS people_got_work,
           avg_days_per_household,
-          (100 - payments_generated_within_15_days) AS payments_delayed_percent
+          -- clamp payments to 0-100
+          CASE 
+            WHEN payments_generated_within_15_days < 0 THEN 0
+            WHEN payments_generated_within_15_days > 100 THEN 100
+            ELSE payments_generated_within_15_days
+          END AS payments_within_15_days
        FROM mgnrega_monthly
        WHERE district_code = $1
        ORDER BY year DESC, month DESC
