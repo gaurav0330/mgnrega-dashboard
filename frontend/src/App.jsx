@@ -14,7 +14,7 @@ export default function App() {
   useEffect(() => {
     async function fetchDistricts() {
       try {
-        const res = await fetch('http://localhost:5000/api/v1/districts');
+        const res = await fetch('https://mgnrega-dashboard-rpfi.onrender.com/api/v1/districts');
         if (!res.ok) throw new Error('Failed to fetch districts');
         const data = await res.json();
         setDistricts(data);
@@ -27,7 +27,7 @@ export default function App() {
 
   async function fetchSummary(code) {
     try {
-      const res = await fetch(`http://localhost:5000/api/v1/district/${code}/summary`);
+      const res = await fetch(`https://mgnrega-dashboard-rpfi.onrender.com/api/v1/district/${code}/summary`);
       if (!res.ok) throw new Error('Summary fetch error');
       const data = await res.json();
       setSummaryData(data);
