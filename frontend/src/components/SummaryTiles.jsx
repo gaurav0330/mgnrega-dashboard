@@ -20,30 +20,44 @@ export default function SummaryTiles({ data, lang }) {
     },
   };
 
+  // Calculate visual indicators
+  const paymentValue = data.payments_within_15_days ?? 0;
+  const paymentIcon = paymentValue >= 80 ? "🟢" : paymentValue >= 50 ? "🟡" : "🔴";
+  const daysValue = data.avg_days_per_household ?? 0;
+  const daysIcon = daysValue >= 80 ? "🟢" : daysValue >= 50 ? "🟡" : "🔴";
+  const peopleCount = data.people_got_work ?? 0;
+  const peopleIcon = peopleCount > 50000 ? "🟢" : peopleCount > 20000 ? "🟡" : "🔴";
+
   const tiles = [
     {
-      label_en: "Individuals worked 👷‍♂️",
-      label_hi: "काम करने वाले व्यक्ति 👷‍♀️",
-      value: data.people_got_work?.toLocaleString() ?? "—",
-      color: "bg-green-100 text-green-900 border-green-300",
+      label_en: "👷‍♂️ People Who Got Work",
+      label_hi: "👷‍♂️ काम मिलने वाले लोग",
+      value: peopleCount?.toLocaleString() ?? "—",
+      subvalue: `${peopleIcon} `,
+      color: "bg-gradient-to-br from-green-100 to-green-200 text-green-900 border-green-400",
       help: helpText[lang].people,
+      icon: peopleIcon,
     },
     {
-      label_en: "Avg. days per household 📅",
-      label_hi: "औसत कार्य दिवस 📅",
-      value: data.avg_days_per_household ?? "—",
-      color: "bg-amber-100 text-amber-900 border-amber-300",
+      label_en: "📅 Work Days Per Family",
+      label_hi: "📅 प्रति परिवार कार्य दिवस",
+      value: daysValue?.toFixed(1) ?? "—",
+      subvalue: daysIcon,
+      color: "bg-gradient-to-br from-amber-100 to-amber-200 text-amber-900 border-amber-400",
       help: helpText[lang].days,
+      icon: daysIcon,
     },
     {
-      label_en: "Payments within 15 days (%) 💰",
-      label_hi: "15 दिनों में भुगतान (%) 💰",
+      label_en: "💰 Fast Payments",
+      label_hi: "💰 तुरंत भुगतान",
       value:
         data.payments_within_15_days != null
-          ? `${data.payments_within_15_days.toFixed(1)}%`
+          ? `${data.payments_within_15_days.toFixed(0)}%`
           : "—",
-      color: "bg-blue-100 text-blue-900 border-blue-300",
+      subvalue: paymentIcon,
+      color: "bg-gradient-to-br from-blue-100 to-blue-200 text-blue-900 border-blue-400",
       help: helpText[lang].payment,
+      icon: paymentIcon,
     },
   ];
 
@@ -75,13 +89,14 @@ export default function SummaryTiles({ data, lang }) {
         {tiles.map((tile, i) => (
           <motion.div
             key={i}
-            className={`p-5 rounded-2xl border shadow ${tile.color} relative text-center`}
+            className={`p-6 rounded-3xl border-2 shadow-lg ${tile.color} relative text-center hover:scale-105 transition-transform`}
             initial={{ opacity: 0, y: 15 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: i * 0.15 }}
           >
-            <div className="text-3xl font-extrabold mb-1">{tile.value}</div>
-            <div className="text-base font-medium">
+            <div className="text-5xl mb-3">{tile.icon}</div>
+            <div className="text-4xl font-black mb-2">{tile.value}</div>
+            <div className="text-lg font-semibold">
               {lang === "en" ? tile.label_en : tile.label_hi}
             </div>
             <button
@@ -90,10 +105,10 @@ export default function SummaryTiles({ data, lang }) {
                   `${lang === "en" ? tile.label_en : tile.label_hi}: ${tile.value}`
                 )
               }
-              className="absolute top-2 right-2 p-1.5 bg-white rounded-full shadow hover:bg-gray-100 transition"
+              className="absolute top-3 right-3 p-2 bg-white/90 rounded-full shadow hover:bg-white transition"
               title="Speak value"
             >
-              <Volume2 className="w-4 h-4 text-gray-600" />
+              <Volume2 className="w-5 h-5 text-gray-700" />
             </button>
           </motion.div>
         ))}

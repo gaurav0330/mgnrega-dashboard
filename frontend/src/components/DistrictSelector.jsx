@@ -16,21 +16,65 @@ export default function DistrictSelector({ onSelect, lang, districts }) {
     setSuggestions(filtered.slice(0, 6));
   }
 
-  function useMyLocation() {
-    if (!navigator.geolocation)
-      return alert(
+  async function reverseGeocode(lat, lon) {
+    try {
+      // Using free reverse geocoding service
+      const response = await fetch(
+        `https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lon}&zoom=5`
+      );
+      const data = await response.json();
+      const address = data.address || {};
+      
+      // Extract district name (might be in city, county, or state_district)
+      const districtName = address.city || address.county || address.state_district || '';
+      
+      if (districtName) {
+        // Find matching district
+        const matched = districts.find(d => 
+          d.district_name.toLowerCase().includes(districtName.toLowerCase()) ||
+          districtName.toLowerCase().includes(d.district_name.toLowerCase())
+        );
+        return matched;
+      }
+    } catch (err) {
+      console.error('Reverse geocoding error:', err);
+    }
+    return null;
+  }
+
+  async function useMyLocation() {
+    if (!navigator.geolocation) {
+      alert(
         lang === "en"
           ? "Geolocation not supported on this device."
           : "इस डिवाइस पर स्थान सेवा उपलब्ध नहीं है।"
       );
+      return;
+    }
 
     setLoading(true);
     navigator.geolocation.getCurrentPosition(
-      (pos) => {
-        console.log("Location:", pos.coords);
-        // TODO: Reverse geocode lat/lon → district
-        const autoDistrict = districts[0];
-        if (autoDistrict) onSelect(autoDistrict.district_code);
+      async (pos) => {
+        const { latitude, longitude } = pos.coords;
+        console.log("Location:", latitude, longitude);
+        
+        // Try to find district from location
+        const matchedDistrict = await reverseGeocode(latitude, longitude);
+        
+        if (matchedDistrict) {
+          onSelect(matchedDistrict.district_code);
+          alert(
+            lang === "en"
+              ? `Detected district: ${matchedDistrict.district_name}`
+              : `पता चला जिला: ${matchedDistrict.district_name}`
+          );
+        } else {
+          alert(
+            lang === "en"
+              ? "Could not identify your district from location. Please select manually."
+              : "आपके स्थान से ज़िला पहचान नहीं हो सका। कृपया मैन्युअल रूप से चुनें।"
+          );
+        }
         setLoading(false);
       },
       () => {

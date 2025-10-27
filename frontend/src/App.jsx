@@ -1,15 +1,20 @@
 import React, { useState, useEffect } from "react";
 import DistrictSelector from "./components/DistrictSelector";
 import SummaryTiles from "./components/SummaryTiles";
+import TrendChart from "./components/TrendChart";
+import ComparisonCard from "./components/ComparisonCard";
 import { motion } from "framer-motion";
 import { Globe2 } from "lucide-react";
 
 export default function App() {
   const [districtCode, setDistrictCode] = useState(null);
   const [summaryData, setSummaryData] = useState(null);
+  const [historyData, setHistoryData] = useState(null);
+  const [comparisonData, setComparisonData] = useState(null);
   const [lang, setLang] = useState("en");
   const [districts, setDistricts] = useState([]);
   const [loading, setLoading] = useState(false);
+  const [activeTab, setActiveTab] = useState("summary");
 
   const API_BASE = import.meta.env.VITE_API_URL || "http://localhost:5000";
 
@@ -42,9 +47,36 @@ export default function App() {
     }
   }
 
+  async function fetchHistory(code) {
+    try {
+      const res = await fetch(`${API_BASE}/api/v1/district/${code}/history?months=12`);
+      if (!res.ok) throw new Error("Failed to fetch history");
+      const data = await res.json();
+      setHistoryData(data);
+    } catch (err) {
+      console.error("Fetch history error:", err);
+      setHistoryData(null);
+    }
+  }
+
+  async function fetchComparison(code) {
+    try {
+      const res = await fetch(`${API_BASE}/api/v1/district/${code}/comparison`);
+      if (!res.ok) throw new Error("Failed to fetch comparison");
+      const data = await res.json();
+      setComparisonData(data);
+    } catch (err) {
+      console.error("Fetch comparison error:", err);
+      setComparisonData(null);
+    }
+  }
+
   function handleDistrictSelect(code) {
     setDistrictCode(code);
     fetchSummary(code);
+    fetchHistory(code);
+    fetchComparison(code);
+    setActiveTab("summary");
   }
 
   return (
@@ -89,7 +121,54 @@ export default function App() {
               : "इस ज़िले के लिए डेटा लोड हो रहा है..."}
           </div>
         ) : districtCode && summaryData ? (
-          <SummaryTiles data={summaryData} lang={lang} />
+          <>
+            {/* Tab Navigation */}
+            <div className="flex space-x-2 mb-6 bg-gray-100 p-2 rounded-2xl">
+              <button
+                onClick={() => setActiveTab("summary")}
+                className={`flex-1 py-3 rounded-xl font-semibold transition ${
+                  activeTab === "summary"
+                    ? "bg-white text-blue-700 shadow"
+                    : "text-gray-600 hover:text-blue-600"
+                }`}
+              >
+                {lang === "en" ? "📊 Overview" : "📊 अवलोकन"}
+              </button>
+              <button
+                onClick={() => setActiveTab("trends")}
+                className={`flex-1 py-3 rounded-xl font-semibold transition ${
+                  activeTab === "trends"
+                    ? "bg-white text-blue-700 shadow"
+                    : "text-gray-600 hover:text-blue-600"
+                }`}
+              >
+                {lang === "en" ? "📈 Trends" : "📈 रुझान"}
+              </button>
+              <button
+                onClick={() => setActiveTab("compare")}
+                className={`flex-1 py-3 rounded-xl font-semibold transition ${
+                  activeTab === "compare"
+                    ? "bg-white text-blue-700 shadow"
+                    : "text-gray-600 hover:text-blue-600"
+                }`}
+              >
+                {lang === "en" ? "📊 Compare" : "📊 तुलना"}
+              </button>
+            </div>
+
+            {/* Tab Content */}
+            {activeTab === "summary" && (
+              <SummaryTiles data={summaryData} lang={lang} />
+            )}
+            {activeTab === "trends" && (
+              <div className="space-y-6">
+                <TrendChart historyData={historyData} lang={lang} />
+              </div>
+            )}
+            {activeTab === "compare" && (
+              <ComparisonCard comparisonData={comparisonData} lang={lang} />
+            )}
+          </>
         ) : (
           <motion.div
             className="text-center text-gray-500 mt-8"
