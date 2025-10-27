@@ -1,19 +1,19 @@
-name: Daily MGNREGA Ingestion
+name: Monthly MGNREGA Ingestion
 
 on:
   schedule:
-    - cron: "0 2 * * *" # every day at 2 AM UTC
-  workflow_dispatch:     # allows manual trigger from GitHub UI
+    - cron: "0 2 1 * *"  # 2 AM UTC on the 1st of every month
+  workflow_dispatch: {}  # Allows manual trigger from GitHub UI
 
 jobs:
   ingest:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout code
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
 
       - name: Setup Node.js
-        uses: actions/setup-node@v3
+        uses: actions/setup-node@v4
         with:
           node-version: 20
 
@@ -28,4 +28,12 @@ jobs:
           node ingest.js
         env:
           DATA_GOV_API_KEY: ${{ secrets.DATA_GOV_API_KEY }}
-          DATABASE_URL: ${{ secrets.DATABASE_URL }}
+          STATE_NAME: ${{ secrets.STATE_NAME }}
+          # Add your PostgreSQL connection details here
+          PGHOST: ${{ secrets.PGHOST }}
+          PGUSER: ${{ secrets.PGUSER }}
+          PGPASSWORD: ${{ secrets.PGPASSWORD }}
+          PGDATABASE: ${{ secrets.PGDATABASE }}
+          PGPORT: ${{ secrets.PGPORT }}
+          YEAR: 2025
+          MONTH: 10
